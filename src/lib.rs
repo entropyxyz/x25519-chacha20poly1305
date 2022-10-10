@@ -10,16 +10,32 @@ use x25519_dalek::{StaticSecret, PublicKey};
 use generic_array::GenericArray;
 use schnorrkel::{MiniSecretKey, SecretKey};
 use wasm_bindgen::prelude::*;
+use hex;
 
 #[wasm_bindgen]
+pub fn to_hex(v: Vec<u8>) -> String {
+    hex::encode(v)
+}
+
+#[wasm_bindgen]
+pub fn from_hex(v: String) -> Vec<u8> {
+    hex::decode(v).unwrap()
+}
+
+#[wasm_bindgen]
+// Derives a public DH key from a static DH secret.
+// sk must be 64 bytes in length or an empty array will be returned. 
+// TODO: find better interface in WASM for throwing errors from rust to wasm.
 pub fn public_key_from_secret(sk: Vec<u8>) -> Vec<u8> {
+    if sk.len() != 64 {
+        return Vec::<u8>::new();
+    }
     let sec_key = SecretKey::from_ed25519_bytes(sk.as_slice()).unwrap();
     let pair = sr25519::Pair::from(sec_key);
     let ss = derive_static_secret(&pair);
     PublicKey::from(&ss).as_bytes().to_vec()
 }
 
-#[wasm_bindgen]
 pub fn gen_msg_nonce() -> Vec<u8> {
   let mut vec: Vec<u8> = vec![0; 12];
   getrandom::getrandom(&mut vec).unwrap();
@@ -27,6 +43,9 @@ pub fn gen_msg_nonce() -> Vec<u8> {
 }
 
 #[wasm_bindgen]
+/// Generates a Ristretto Schnorr secret key.
+/// This method is used for testing, applications that implement this
+/// library should rely on user provided keys generated from substrate.
 pub fn gen_signing_key() -> Vec<u8> {
     let mini_secret_key = MiniSecretKey::generate();
     let secret_key: SecretKey = mini_secret_key.expand(MiniSecretKey::ED25519_MODE); 
@@ -36,6 +55,7 @@ pub fn gen_signing_key() -> Vec<u8> {
 }
 
 #[wasm_bindgen]
+/// Encrypts, signs, and serializes a SignedMessage to JSON.
 pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8> ) -> String {
     let mut _raw_pk: [u8; 32] = [0; 32];
     _raw_pk.copy_from_slice(&pk[0..32]);
@@ -62,6 +82,8 @@ pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8> ) -> String {
 }
 
 #[wasm_bindgen]
+/// Deserializes, verifies and decrypts a json encoded `SignedMessage`.
+/// Returns the plaintext.
 pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Vec<u8> {
 
     let _sm = serde_json::from_str(msg.as_str());
@@ -85,10 +107,10 @@ pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Vec<u8> {
             let res = sm.decrypt(&pair);
             match res {
                 Err(v) => {
-                    return v.to_string().as_bytes().to_vec();
+                    return "failed".to_string().as_bytes().to_vec();
                 },
                 Ok(v) => {
-                    return v;
+                    return v.clone();
                 }
             }
         },
@@ -107,6 +129,7 @@ fn constant_time_ne(a: &Vec<u8>, b: &Vec<u8>) -> u8 {
 }
 
 #[wasm_bindgen]
+/// Checks the equality of two equal sized byte vectors in constant time.
 pub fn constant_time_eq(a: Vec<u8>, b: Vec<u8>) -> bool {
     a.len() == b.len() && constant_time_ne(&a, &b) == 0
 }
@@ -177,6 +200,9 @@ impl SignedMessage {
 
     /// Decrypts the message and returns the plaintext.
     pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, Error> {
+        if !self.verify() {
+            return Err(Error);
+        }
         let static_secret = derive_static_secret(sk);
         let shared_secret = static_secret.diffie_hellman(&PublicKey::from(self.a));
         let cipher = ChaCha20Poly1305::new_from_slice(shared_secret.as_bytes()).unwrap();
@@ -206,12 +232,3 @@ impl SignedMessage {
     pub fn to_json(&self) -> String { to_string(self).unwrap() }
 }
 
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-    }
-}

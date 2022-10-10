@@ -5,8 +5,70 @@
     <title>x25519-ChaCha20Poly1305 Example</title>
   </head>
   <body>
+    <!-- <p>x25519-ChaCha20Poly1305 example.</p>
+    <input type="button" id="button" value="generate alice keypair" onclick="alice_gen()"/>
+    <input type="text" placeholder="secret_key" id="alice_sk">
+    <input type="text" placeholder="public_key" id="alice_pk">
+    <br>
+    <br>
+    <br>
+    <input type="button" id="button" value="generate bob keypair" onclick="bob_gen()"/>
+    <input type="text" placeholder="secret_key" id="bob_sk">
+    <input type="text" placeholder="public_key" id="bob_pk">
+    <br>
+    <br>
+    <br>
+    <input type="button" id="button" value="alice encrypt and sign" onclick="__encrypt_and_sign()"/>
+    <input type="text" value="hey you look cute today" id="message" >
+    <input type="button" id="button" value="bob decrypt and verify" onclick="__decrypt_and_verify()"/>
+    <br>
+    <br>
+    <br>
+    <textarea id="encrypted_json" cols=50 rows=25></textarea>
+    <textarea id="decrypted_json" cols=50 rows=25></textarea>
+ -->
+
     <script type="module">
-      import init, {  decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "./node_modules/x25519-chacha20poly1305-wasm/x25519_chacha20poly1305_wasm.js";
+      import init, { to_hex, from_hex, decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "./node_modules/x25519-chacha20poly1305-wasm/x25519_chacha20poly1305_wasm.js";
+      // function alice_gen() {
+      //   let alice_sk = gen_signing_key();
+      //   let alice_pk = public_key_from_secret(alice_sk);
+      //   window.document.getElementById("alice_sk").value = to_hex(alice_sk);
+      //   window.document.getElementById("alice_pk").value = to_hex(alice_pk);
+      // }
+      // function bob_gen() {
+      //   let bob_sk = gen_signing_key();
+      //   let bob_pk = public_key_from_secret(bob_sk);
+      //   window.document.getElementById("bob_sk").value = to_hex(bob_sk);
+      //   window.document.getElementById("bob_pk").value = to_hex(bob_pk);
+      // }
+
+      // function __encrypt_and_sign() {
+      //   let _pk =  window.document.getElementById("bob_pk").value// .value.split("").map(x => x.charCodeAt())); 
+      //   let _sk =  window.document.getElementById("alice_sk").value// .value.split("").map(x => x.charCodeAt())); 
+      //   let msg = from_hex(to_hex(window.document.getElementById("message").value))// .value.split("").map(x => x.charCodeAt())); 
+      //   let pk  = from_hex(_pk) 
+      //   let sk  = from_hex(_sk)
+      //   let result = encrypt_and_sign(sk, msg, pk);
+      //   // document.getElementById('encrypted_json').innerHTML = JSON.stringify(JSON.parse(result), null, 1);
+      //   document.getElementById('encrypted_json').innerHTML = result;
+      // }
+
+      // function __decrypt_and_verify() {
+      //   let _sk =  window.document.getElementById("bob_sk").value// .value.split("").map(x => x.charCodeAt())); 
+      //   let sk = from_hex(_sk);
+      //   let msg = window.document.getElementById("encrypted_json").innerHTML// .value.split("").map(x => x.charCodeAt())); 
+      //   console.log(msg);
+      //   let result = decrypt_and_verify(sk, msg);
+      //   console.log(result);
+      //   document.getElementById('decrypted_json').innerHTML = result;
+      // }
+
+      // window.__decrypt_and_verify = __decrypt_and_verify;
+      // window.__encrypt_and_sign = __encrypt_and_sign;
+      // window.alice_gen = alice_gen;
+      // window.bob_gen = bob_gen;
+
       init().then(() => {
 
         // Alice keygen.
@@ -19,7 +81,7 @@
 
         // Create a random message.
         let plaintext = window.crypto.getRandomValues(new Uint8Array(32));
-
+          console.log(plaintext);
         // Alice encrypts and signs the message to bob.
         let encrypted_and_signed_msg = encrypt_and_sign(alice_sk, plaintext, bob_pk);
         console.log(encrypted_and_signed_msg);
@@ -27,11 +89,15 @@
         // Bob decrypts the message.
         let decrypted_plaintext = decrypt_and_verify(bob_sk, encrypted_and_signed_msg);
 
+        console.log(decrypted_plaintext);
         // Check the original plaintext equals the decrypted plaintext.
         let is_equal = constant_time_eq(decrypted_plaintext, plaintext);
         console.log("alice encrypted plaintext is equal to bob decrypted ciphertext: ", is_equal);
 
       });
+
+    </script>
+    <script>
 
     </script>
   </body>
