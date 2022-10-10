@@ -1,4 +1,5 @@
 CRATE_NAME := x25519-chacha20poly1305-wasm
+HOST_IP := 127.0.0.1
 
 default :: link-project
 
@@ -21,7 +22,7 @@ build-bundler ::
 
 # Runs the example with a http server
 run ::
-	cd example && ./server.sh
+	cd example && ./server.sh $(HOST_IP)
 
 # Cleans out build artifacts.
 clean ::
