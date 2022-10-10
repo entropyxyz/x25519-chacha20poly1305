@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>x25519-ChaCha20Poly1305 Example</title>
+  </head>
+  <body>
+    <script type="module">
+      import init, {  decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "./node_modules/x25519-chacha20poly1305-wasm/x25519_chacha20poly1305_wasm.js";
+      init().then(() => {
+
+        // Alice keygen.
+        let alice_sk = gen_signing_key();
+        let alice_pk = public_key_from_secret(alice_sk);
+
+        // Bob keygen.
+        let bob_sk = gen_signing_key();
+        let bob_pk = public_key_from_secret(bob_sk);
+
+        // Create a random message.
+        let plaintext = window.crypto.getRandomValues(new Uint8Array(32));
+
+        // Alice encrypts and signs the message to bob.
+        let encrypted_and_signed_msg = encrypt_and_sign(alice_sk, plaintext, bob_pk);
+        console.log(encrypted_and_signed_msg);
+
+        // Bob decrypts the message.
+        let decrypted_plaintext = decrypt_and_verify(bob_sk, encrypted_and_signed_msg);
+
+        // Check the original plaintext equals the decrypted plaintext.
+        let is_equal = constant_time_eq(decrypted_plaintext, plaintext);
+        console.log("alice encrypted plaintext is equal to bob decrypted ciphertext: ", is_equal);
+
+      });
+
+    </script>
+  </body>
+</html>
