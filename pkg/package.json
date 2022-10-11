@@ -10,7 +10,6 @@
     "x25519_chacha20poly1305_wasm.js",
     "x25519_chacha20poly1305_wasm.d.ts"
   ],
-  "module": "x25519_chacha20poly1305_wasm.js",
-  "types": "x25519_chacha20poly1305_wasm.d.ts",
-  "sideEffects": false
+  "main": "x25519_chacha20poly1305_wasm.js",
+  "types": "x25519_chacha20poly1305_wasm.d.ts"
 }
