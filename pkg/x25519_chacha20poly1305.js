@@ -449,7 +449,7 @@ module.exports.__wbindgen_memory = function() {
     return addHeapObject(ret);
 };
 
-const path = require('path').join(__dirname, 'x25519_chacha20poly1305_wasm_bg.wasm');
+const path = require('path').join(__dirname, 'x25519_chacha20poly1305_bg.wasm');
 const bytes = require('fs').readFileSync(path);
 
 const wasmModule = new WebAssembly.Module(bytes);

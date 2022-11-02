@@ -1,4 +1,4 @@
-CRATE_NAME := x25519-chacha20poly1305-wasm
+CRATE_NAME := x25519-chacha20poly1305
 
 default :: build-nodejs
 
@@ -24,7 +24,7 @@ link-project :: link-local
 build-bundler ::
 	wasm-pack build --target bundler
 
-run ::
+test ::
 	cd example && ts-node test.ts
 
 # Cleans out build artifacts.

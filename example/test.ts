@@ -1,5 +1,5 @@
 
-import {from_hex, to_hex, decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "x25519-chacha20poly1305-wasm";
+import {from_hex, to_hex, decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "x25519-chacha20poly1305";
 
 let empty = new Uint8Array(32);
 let hempty = to_hex(empty);
