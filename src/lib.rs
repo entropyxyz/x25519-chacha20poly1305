@@ -294,7 +294,6 @@ mod tests {
 
         let alice = mnemonic_to_pair(&new_mnemonic());
         let alice_secret = derive_static_secret(&alice);
-        let alice_public_key = PublicKey::from(&alice_secret);
 
         let bob = mnemonic_to_pair(&new_mnemonic());
         let bob_secret = derive_static_secret(&bob);
