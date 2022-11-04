@@ -16,7 +16,7 @@ link-local :: build-nodejs
 	cd pkg && npm link
 
 # Links the example frontend project with the locally built wasm/js package.
-link-project :: link-local
+link :: link-local
 	cd example && npm link $(CRATE_NAME) 
 
 # Another build option for compiling to webpack, builds a typescript library around the WASM for use
