@@ -15,8 +15,5 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Run js tests
-        run: 
-          make
-          make link
-          ./example/ci-test.sh
+        run: ./example/ci-test.sh
 

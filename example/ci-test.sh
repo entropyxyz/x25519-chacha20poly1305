@@ -5,6 +5,10 @@ readonly NODE_OS="linux"
 readonly NODE_ARCH="x64"
 readonly FN="node-$NODE_VERSION-$NODE_OS-$NODE_ARCH"
 
+# Compile/link typescript library
+make
+make link
+
 # Install JS dependencies
 cd $EXEC_DIR
 wget https://nodejs.org/dist/$NODE_VERSION/$FN.tar.xz
