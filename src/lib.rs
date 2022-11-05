@@ -1,3 +1,4 @@
+use bip39::Mnemonic;
 use blake2::{Blake2s256, Digest};
 use chacha20poly1305::{
     aead::{Aead, Error, KeyInit},
@@ -244,5 +245,79 @@ impl SignedMessage {
     /// Returns a serialized json string of self.
     pub fn to_json(&self) -> String {
         to_string(self).unwrap()
+    }
+}
+
+/// Creates a new random Mnemonic.
+pub fn new_mnemonic() -> Mnemonic {
+    Mnemonic::new(bip39::MnemonicType::Words24, bip39::Language::English)
+}
+
+/// Derives a sr25519::Pair from a Mnemonic
+pub fn mnemonic_to_pair(m: &Mnemonic) -> sr25519::Pair {
+    <sr25519::Pair as Pair>::from_phrase(m.phrase(), None)
+        .unwrap()
+        .0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bad_signatures_fails() {
+        let plaintext = Bytes(vec![69, 42, 0]);
+
+        let alice = mnemonic_to_pair(&new_mnemonic());
+        let alice_secret = derive_static_secret(&alice);
+        let alice_public_key = PublicKey::from(&alice_secret);
+
+        let bob = mnemonic_to_pair(&new_mnemonic());
+        let bob_secret = derive_static_secret(&bob);
+        let bob_public_key = PublicKey::from(&bob_secret);
+
+        let alice_to_alice = SignedMessage::new(&alice, &plaintext, &alice_public_key).unwrap();
+        let mut alice_to_bob = SignedMessage::new(&alice, &plaintext, &bob_public_key).unwrap();
+
+        // Test that replacing the public key fails to verify the signature.
+        alice_to_bob.sig = alice_to_alice.sig;
+        assert!(!alice_to_bob.verify());
+
+        // Test that decrypting with the wrong private key throws an error.
+        let res = alice_to_bob.decrypt(&alice);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_sign_and_encrypt() {
+        let plaintext = Bytes(vec![69, 42, 0]);
+
+        let alice = mnemonic_to_pair(&new_mnemonic());
+        let alice_secret = derive_static_secret(&alice);
+
+        let bob = mnemonic_to_pair(&new_mnemonic());
+        let bob_secret = derive_static_secret(&bob);
+        let bob_public_key = PublicKey::from(&bob_secret);
+
+        // Test encryption & signing.
+        let encrypt_result = SignedMessage::new(&alice, &plaintext, &bob_public_key);
+        // Assert no error received in encryption.
+        assert!(encrypt_result.is_ok());
+        let encrypted_message = encrypt_result.unwrap();
+
+        // Test signature validity
+        assert!(encrypted_message.verify());
+
+        // Test decryption
+        let decrypt_result = encrypted_message.decrypt(&bob);
+        // Assert no error received in decryption.
+        assert!(decrypt_result.is_ok());
+        let decrypted_result = decrypt_result.unwrap();
+
+        // Check the decrypted message equals the plaintext.
+        assert_eq!(Bytes(decrypted_result), plaintext);
+
+        // Check the encrypted message != the plaintext.
+        assert_ne!(encrypted_message.msg, plaintext);
     }
 }

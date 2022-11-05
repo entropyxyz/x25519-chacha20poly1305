@@ -1,0 +1,19 @@
+name: Javascript Tests
+
+on:
+  - pull_request
+
+jobs:
+  format:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run js tests
+        run: ./example/ci-test.sh
+
