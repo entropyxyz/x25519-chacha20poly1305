@@ -1,5 +1,10 @@
 ### x25519-chacha20poly1305
 
+---
+**WARNING: This code has not been audited and is not yet suitable for production. Use at your own risk.**
+
+---
+
 > NOTE: make sure you have your C archiver and compiler env vars set, or `secp256k1-sys` will fail to build
 >
 > e.g.
