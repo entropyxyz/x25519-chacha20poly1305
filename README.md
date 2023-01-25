@@ -5,6 +5,12 @@
 
 ---
 
+> NOTE: make sure you have your C archiver and compiler env vars set, or `secp256k1-sys` will fail to build
+>
+> e.g.
+> `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
+> `CC=/opt/homebrew/opt/llvm/bin/clang`
+
 Nodejs package for x25519 key exchange and chacha20poly1305 encryption, written in Rust compiled to WASM.
 
 ## Development process
@@ -21,7 +27,7 @@ Compile a nodejs/wasm library from the Rust source.
 make
 ```
 
-### Link 
+### Link
 
 Link the nodejs/wasm library locally.
 
@@ -36,4 +42,3 @@ After compiling and linking, run:
 ```sh
 ts-node example/test.ts
 ```
-
