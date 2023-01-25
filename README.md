@@ -16,7 +16,7 @@ Compile a nodejs/wasm library from the Rust source.
 make
 ```
 
-### Link 
+### Link
 
 Link the nodejs/wasm library locally.
 
@@ -32,3 +32,6 @@ After compiling and linking, run:
 ts-node example/test.ts
 ```
 
+### NPM
+
+link to package on npm: https://www.npmjs.com/package/x25519
