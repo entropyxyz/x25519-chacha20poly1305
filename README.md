@@ -42,3 +42,8 @@ After compiling and linking, run:
 ```sh
 ts-node example/test.ts
 ```
+
+### NPM
+
+link to package on npm: https://www.npmjs.com/package/x25519
+
