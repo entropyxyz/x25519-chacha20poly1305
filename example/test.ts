@@ -1,5 +1,12 @@
-
-import {from_hex, to_hex, decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "x25519-chacha20poly1305";
+import {
+  from_hex,
+  to_hex,
+  decrypt_and_verify,
+  gen_signing_key,
+  encrypt_and_sign,
+  public_key_from_secret,
+  constant_time_eq,
+} from "@entropyxyz/x25519-chacha20poly1305-nodejs";
 
 let empty = new Uint8Array(32);
 let hempty = to_hex(empty);
@@ -26,5 +33,7 @@ let decrypted_plaintext = decrypt_and_verify(bob_sk, encrypted_and_signed_msg);
 console.log(decrypted_plaintext);
 // Check the original plaintext equals the decrypted plaintext.
 let is_equal = constant_time_eq(decrypted_plaintext, plaintext);
-console.log("alice encrypted plaintext is equal to bob decrypted ciphertext: ", is_equal);
-
+console.log(
+  "alice encrypted plaintext is equal to bob decrypted ciphertext: ",
+  is_equal
+);

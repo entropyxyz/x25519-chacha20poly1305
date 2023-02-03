@@ -1,5 +1,5 @@
 {
-  "name": "x25519-chacha20poly1305",
+  "name": "@entropyxyz/x25519-chacha20poly1305-web",
   "collaborators": [
     "John Sahhar <john@entropy.xyz>"
   ],
@@ -11,10 +11,11 @@
     "url": "https://github.com/entropyxyz/x25519-chacha20poly1305"
   },
   "files": [
-    "x25519_chacha20poly1305_bg.wasm",
-    "x25519_chacha20poly1305.js",
-    "x25519_chacha20poly1305.d.ts"
+    "x25519-chacha20poly1305-web_bg.wasm",
+    "x25519-chacha20poly1305-web.js",
+    "x25519-chacha20poly1305-web.d.ts"
   ],
-  "main": "x25519_chacha20poly1305.js",
-  "types": "x25519_chacha20poly1305.d.ts"
+  "module": "x25519-chacha20poly1305-web.js",
+  "types": "x25519-chacha20poly1305-web.d.ts",
+  "sideEffects": false
 }

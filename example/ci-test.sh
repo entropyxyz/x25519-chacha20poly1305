@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly EXEC_DIR=$(dirname "$(realpath $0)") 
+readonly EXEC_DIR=$(dirname "$(realpath $0)")
 readonly NODE_VERSION="v18.12.1"
 readonly NODE_OS="linux"
 readonly NODE_ARCH="x64"
@@ -14,9 +14,9 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 cargo install wasm-pack
 
 # Compile/link typescript library
-make
-make link
-
+cd ../ && make
+cd ../ && make link-example-nodejs
+cd ../ && make list-linked
 # Install JS dependencies
 cd $EXEC_DIR
 wget https://nodejs.org/dist/$NODE_VERSION/$FN.tar.xz
@@ -26,4 +26,3 @@ npm install -g ts-node
 
 # Run tests
 ts-node test.ts
-
