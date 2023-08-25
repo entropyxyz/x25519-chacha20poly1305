@@ -59,12 +59,7 @@ rust:
 # This target is specifically for generating API documentation from
 # within a Vercel.com Project. It is used as the Projects `installCommand`.
 vercel-install-api-docs :: vercel-rustup rust
-		mkdir -p /root/.ssh
-		echo "Host github.com" > /root/.ssh/config
-		echo "	StrictHostKeyChecking no" >> /root/.ssh/config
-		echo "	IdentityFile /root/.ssh/id_ed25519" >> /root/.ssh/config
-		printenv github_ssh_deploy_key > /root/.ssh/id_ed25519
-		chmod 600 /root/.ssh/id_ed25519
+		git config --global url."https://github.com".insteadOf ssh://git@github.com
 
 # The Vercel Project's `buildCommand` is defined here.
 vercel-build-api-docs ::
