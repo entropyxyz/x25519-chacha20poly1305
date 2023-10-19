@@ -18,11 +18,13 @@ use zeroize::Zeroize;
 
 const HEX_PREFIX: [u8; 2] = [48, 120];
 
+/// Convert a Vec<u8> to a hex encoded string
 #[wasm_bindgen]
 pub fn to_hex(v: Vec<u8>) -> String {
     hex::encode(v)
 }
 
+/// Convert a hex string to a Vec<u8>, ignoring 0x prefix
 #[wasm_bindgen]
 pub fn from_hex(v: String) -> Result<Vec<u8>, Error> {
     let mut to_decode: String = v;
@@ -36,8 +38,8 @@ pub fn from_hex(v: String) -> Result<Vec<u8>, Error> {
 }
 
 #[wasm_bindgen]
-// Derives a public DH key from a static DH secret.
-// sk must be 64 bytes in length or an error will be returned.
+/// Derives a public DH key from a static DH secret.
+/// sk must be 64 bytes in length or an error will be returned.
 pub fn public_key_from_secret(sk: Vec<u8>) -> Result<Vec<u8>, Error> {
     if sk.len() != 64 {
         return Err(Error::new("Secret key must be 64 bytes"));
@@ -49,6 +51,8 @@ pub fn public_key_from_secret(sk: Vec<u8>) -> Result<Vec<u8>, Error> {
     Ok(PublicKey::from(&ss).as_bytes().to_vec())
 }
 
+// TODO i don't think this is needed as nonce generation is done internally
+/// Generate a 12 byte random nonce
 pub fn gen_msg_nonce() -> Result<Vec<u8>, Error> {
     let mut vec: Vec<u8> = vec![0; 12];
     getrandom::getrandom(&mut vec).map_err(|err| Error::new(&err.to_string()))?;
@@ -127,6 +131,7 @@ pub fn constant_time_eq(a: Vec<u8>, b: Vec<u8>) -> bool {
     a.len() == b.len() && constant_time_ne(&a, &b) == 0
 }
 
+/// Given a sr25519 secret signing key, generate an x25519 secret encryption key
 pub fn derive_static_secret(sk: &sr25519::Pair) -> StaticSecret {
     let mut buffer: [u8; 32] = [0; 32];
     let mut hasher = Blake2s256::new();
