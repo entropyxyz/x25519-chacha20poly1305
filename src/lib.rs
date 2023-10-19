@@ -1,11 +1,12 @@
 use bip39::Mnemonic;
 use blake2::{Blake2s256, Digest};
 use chacha20poly1305::{
-    aead::{Aead, Error, KeyInit},
+    aead::{self, Aead, KeyInit},
     ChaCha20Poly1305,
 };
 use generic_array::GenericArray;
 use hex;
+use js_sys::Error;
 use schnorrkel::{MiniSecretKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
@@ -21,7 +22,7 @@ pub fn to_hex(v: Vec<u8>) -> String {
 }
 
 #[wasm_bindgen]
-pub fn from_hex(v: String) -> Vec<u8> {
+pub fn from_hex(v: String) -> Result<Vec<u8>, Error> {
     let mut to_decode: String = v;
     if to_decode.len() >= 2 {
         let prefix = to_decode[0..2].as_bytes();
@@ -29,44 +30,44 @@ pub fn from_hex(v: String) -> Vec<u8> {
             to_decode = to_decode[2..].to_string();
         }
     }
-    hex::decode(to_decode).unwrap()
+    Ok(hex::decode(to_decode).map_err(|err| Error::new(&err.to_string()))?)
 }
 
 #[wasm_bindgen]
 // Derives a public DH key from a static DH secret.
-// sk must be 64 bytes in length or an empty array will be returned.
-// TODO: find better interface in WASM for throwing errors from rust to wasm.
-pub fn public_key_from_secret(sk: Vec<u8>) -> Vec<u8> {
+// sk must be 64 bytes in length or an error will be returned.
+pub fn public_key_from_secret(sk: Vec<u8>) -> Result<Vec<u8>, Error> {
     if sk.len() != 64 {
-        return Vec::<u8>::new();
+        return Err(Error::new("Secret key must be 64 bytes"));
     }
-    let sec_key = SecretKey::from_ed25519_bytes(sk.as_slice()).unwrap();
+    let sec_key =
+        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
     let pair = sr25519::Pair::from(sec_key);
     let ss = derive_static_secret(&pair);
-    PublicKey::from(&ss).as_bytes().to_vec()
+    Ok(PublicKey::from(&ss).as_bytes().to_vec())
 }
 
-pub fn gen_msg_nonce() -> Vec<u8> {
+pub fn gen_msg_nonce() -> Result<Vec<u8>, Error> {
     let mut vec: Vec<u8> = vec![0; 12];
-    getrandom::getrandom(&mut vec).unwrap();
-    return vec;
+    getrandom::getrandom(&mut vec).map_err(|err| Error::new(&err.to_string()))?;
+    return Ok(vec);
 }
 
 #[wasm_bindgen]
 /// Generates a Ristretto Schnorr secret key.
 /// This method is used for testing, applications that implement this
 /// library should rely on user provided keys generated from substrate.
-pub fn gen_signing_key() -> Vec<u8> {
+pub fn gen_signing_key() -> Result<Vec<u8>, Error> {
     let mini_secret_key = MiniSecretKey::generate();
     let secret_key: SecretKey = mini_secret_key.expand(MiniSecretKey::ED25519_MODE);
     let _sk: [u8; 64] = secret_key.to_bytes();
-    let sk = SecretKey::from_bytes(&_sk).unwrap();
-    sk.to_bytes().to_vec()
+    let sk = SecretKey::from_bytes(&_sk).map_err(|err| Error::new(&err.to_string()))?;
+    Ok(sk.to_bytes().to_vec())
 }
 
 #[wasm_bindgen]
 /// Encrypts, signs, and serializes a SignedMessage to JSON.
-pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8>) -> String {
+pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8>) -> Result<String, Error> {
     let mut _raw_pk: [u8; 32] = [0; 32];
     _raw_pk.copy_from_slice(&pk[0..32]);
     let _pk = PublicKey::from(_raw_pk);
@@ -75,55 +76,34 @@ pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8>) -> String {
     let mut sk_buff: [u8; 64] = [0; 64];
     sk_buff.copy_from_slice(&sk[0..64]);
     if sk.len() != 64 {
-        return "bad key length".to_string();
+        return Err(Error::new("Secret key must be 64 bytes"));
     }
 
-    let sec_key = SecretKey::from_ed25519_bytes(sk.as_slice());
-    match sec_key {
-        Err(v) => {
-            return v.to_string();
-        }
-        Ok(v) => {
-            let pair = sr25519::Pair::from(v);
-            let sm = SignedMessage::new(&pair, &_msg, &_pk).unwrap();
-            return sm.to_json();
-        }
-    }
+    let sec_key =
+        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
+    let pair = sr25519::Pair::from(sec_key);
+    let signed_message =
+        SignedMessage::new(&pair, &_msg, &_pk).map_err(|err| Error::new(&err.to_string()))?;
+    Ok(signed_message.to_json())
 }
 
 #[wasm_bindgen]
 /// Deserializes, verifies and decrypts a json encoded `SignedMessage`.
 /// Returns the plaintext.
-pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Vec<u8> {
-    let _sm = serde_json::from_str(msg.as_str());
-    if _sm.is_err() {
-        return "error deserializing".to_string().as_bytes().to_vec();
-    }
-
-    let sm: SignedMessage = _sm.unwrap();
+pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Result<Vec<u8>, Error> {
+    let sm: SignedMessage =
+        serde_json::from_str(msg.as_str()).map_err(|err| Error::new(&err.to_string()))?;
 
     if !sm.verify() {
-        return "failed to verify signature".to_string().as_bytes().to_vec();
+        return Err(Error::new("Failed to verify signature"));
     }
 
-    let sec_key = SecretKey::from_ed25519_bytes(sk.as_slice());
-    match sec_key {
-        Err(v) => {
-            return v.to_string().as_bytes().to_vec();
-        }
-        Ok(v) => {
-            let pair = sr25519::Pair::from(v);
-            let res = sm.decrypt(&pair);
-            match res {
-                Err(_v) => {
-                    return "failed".to_string().as_bytes().to_vec();
-                }
-                Ok(v) => {
-                    return v.clone();
-                }
-            }
-        }
-    }
+    let sec_key =
+        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
+    let pair = sr25519::Pair::from(sec_key);
+    Ok(sm
+        .decrypt(&pair)
+        .map_err(|err| Error::new(&err.to_string()))?)
 }
 
 /// Constant time not-equal compare for two equal sized byte vectors.
@@ -179,7 +159,11 @@ impl SignedMessage {
     /// via Diffie-Hellman for encryption.
     /// msg is the plaintext message to encrypt and sign
     /// recip is the public Diffie-Hellman parameter of the recipient.
-    pub fn new(sk: &sr25519::Pair, msg: &Bytes, recip: &PublicKey) -> Result<SignedMessage, Error> {
+    pub fn new(
+        sk: &sr25519::Pair,
+        msg: &Bytes,
+        recip: &PublicKey,
+    ) -> Result<SignedMessage, aead::Error> {
         let s = derive_static_secret(sk);
         let a = PublicKey::from(&s);
         let shared_secret = s.diffie_hellman(recip);
@@ -204,9 +188,9 @@ impl SignedMessage {
     }
 
     /// Decrypts the message and returns the plaintext.
-    pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, Error> {
+    pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, aead::Error> {
         if !self.verify() {
-            return Err(Error);
+            return Err(aead::Error);
         }
         let static_secret = derive_static_secret(sk);
         let shared_secret = static_secret.diffie_hellman(&PublicKey::from(self.a));
@@ -293,7 +277,7 @@ mod tests {
         let plaintext = Bytes(vec![69, 42, 0]);
 
         let alice = mnemonic_to_pair(&new_mnemonic());
-        let alice_secret = derive_static_secret(&alice);
+        let _alice_secret = derive_static_secret(&alice);
 
         let bob = mnemonic_to_pair(&new_mnemonic());
         let bob_secret = derive_static_secret(&bob);
