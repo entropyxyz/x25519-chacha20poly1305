@@ -1,16 +1,20 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* Convert a Vec<u8> to a hex encoded string
 * @param {Uint8Array} v
 * @returns {string}
 */
 export function to_hex(v: Uint8Array): string;
 /**
+* Convert a hex string to a Vec<u8>, ignoring 0x prefix
 * @param {string} v
 * @returns {Uint8Array}
 */
 export function from_hex(v: string): Uint8Array;
 /**
+* Derives a public DH key from a static DH secret.
+* sk must be 64 bytes in length or an error will be returned.
 * @param {Uint8Array} sk
 * @returns {Uint8Array}
 */
