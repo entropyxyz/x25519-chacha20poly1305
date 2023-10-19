@@ -20,6 +20,7 @@ sp-core           ="6.0.0"
 generic-array   ="0.14.6"
 getrandom = { version = "0.2", features = ["js"] }
 schnorrkel = "0.9.1"
+js-sys = "0.3.64"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
