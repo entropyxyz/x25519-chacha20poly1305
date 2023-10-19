@@ -86,7 +86,9 @@ pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8>) -> Result<String
     let pair = sr25519::Pair::from(sec_key);
     let signed_message =
         SignedMessage::new(&pair, &_msg, &_pk).map_err(|err| Error::new(&err.to_string()))?;
-    Ok(signed_message.to_json())
+    Ok(signed_message
+        .to_json()
+        .map_err(|err| Error::new(&err.to_string()))?)
 }
 
 #[wasm_bindgen]
@@ -193,10 +195,6 @@ impl SignedMessage {
         })
     }
 
-    // let mut static_nonce: [u8; 12] = [0; 12];
-    // getrandom::getrandom(&mut static_nonce).unwrap();
-    // let nonce = GenericArray::from_slice(&static_nonce);
-
     /// Decrypts the message and returns the plaintext.
     pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, ValidationErr> {
         let mut static_secret = derive_static_secret(sk);
@@ -243,8 +241,8 @@ impl SignedMessage {
     }
 
     /// Returns a serialized json string of self.
-    pub fn to_json(&self) -> String {
-        to_string(self).unwrap()
+    pub fn to_json(&self) -> Result<String, ValidationErr> {
+        Ok(to_string(self)?)
     }
 }
 
@@ -254,10 +252,10 @@ pub fn new_mnemonic() -> Mnemonic {
 }
 
 /// Derives a sr25519::Pair from a Mnemonic
-pub fn mnemonic_to_pair(m: &Mnemonic) -> sr25519::Pair {
-    <sr25519::Pair as Pair>::from_phrase(m.phrase(), None)
-        .unwrap()
-        .0
+pub fn mnemonic_to_pair(m: &Mnemonic) -> Result<sr25519::Pair, ValidationErr> {
+    Ok(<sr25519::Pair as Pair>::from_phrase(m.phrase(), None)
+        .map_err(|_| ValidationErr::SecretString("Secret String Error"))?
+        .0)
 }
 
 #[derive(Debug, Error)]
@@ -274,6 +272,8 @@ pub enum ValidationErr {
     StaleMessage,
     #[error("Time subtraction error: {0}")]
     SystemTime(#[from] std::time::SystemTimeError),
+    #[error("JSON serialization error: {0}")]
+    Json(#[from] serde_json::Error),
 }
 
 #[cfg(test)]
@@ -284,11 +284,11 @@ mod tests {
     fn test_bad_signatures_fails() {
         let plaintext = Bytes(vec![69, 42, 0]);
 
-        let alice = mnemonic_to_pair(&new_mnemonic());
+        let alice = mnemonic_to_pair(&new_mnemonic()).unwrap();
         let alice_secret = derive_static_secret(&alice);
         let alice_public_key = PublicKey::from(&alice_secret);
 
-        let bob = mnemonic_to_pair(&new_mnemonic());
+        let bob = mnemonic_to_pair(&new_mnemonic()).unwrap();
         let bob_secret = derive_static_secret(&bob);
         let bob_public_key = PublicKey::from(&bob_secret);
 
@@ -308,10 +308,10 @@ mod tests {
     fn test_sign_and_encrypt() {
         let plaintext = Bytes(vec![69, 42, 0]);
 
-        let alice = mnemonic_to_pair(&new_mnemonic());
+        let alice = mnemonic_to_pair(&new_mnemonic()).unwrap();
         let _alice_secret = derive_static_secret(&alice);
 
-        let bob = mnemonic_to_pair(&new_mnemonic());
+        let bob = mnemonic_to_pair(&new_mnemonic()).unwrap();
         let bob_secret = derive_static_secret(&bob);
         let bob_public_key = PublicKey::from(&bob_secret);
 
