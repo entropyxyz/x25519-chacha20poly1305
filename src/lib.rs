@@ -1,18 +1,20 @@
 use bip39::Mnemonic;
 use blake2::{Blake2s256, Digest};
 use chacha20poly1305::{
-    aead::{self, Aead, KeyInit},
+    aead::{Aead, AeadCore, KeyInit},
     ChaCha20Poly1305,
 };
-use generic_array::GenericArray;
 use hex;
 use js_sys::Error;
+use rand_core::OsRng;
 use schnorrkel::{MiniSecretKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use sp_core::{crypto::AccountId32, sr25519, sr25519::Signature, Bytes, Pair};
+use thiserror::Error;
 use wasm_bindgen::prelude::*;
 use x25519_dalek::{PublicKey, StaticSecret};
+use zeroize::Zeroize;
 
 const HEX_PREFIX: [u8; 2] = [48, 120];
 
@@ -163,15 +165,19 @@ impl SignedMessage {
         sk: &sr25519::Pair,
         msg: &Bytes,
         recip: &PublicKey,
-    ) -> Result<SignedMessage, aead::Error> {
-        let s = derive_static_secret(sk);
-        let a = PublicKey::from(&s);
+    ) -> Result<SignedMessage, ValidationErr> {
+        let mut s = derive_static_secret(sk);
+        let a = x25519_dalek::PublicKey::from(&s);
         let shared_secret = s.diffie_hellman(recip);
+        s.zeroize();
+        let msg_nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
+        let cipher = ChaCha20Poly1305::new_from_slice(shared_secret.as_bytes())
+            .map_err(|e| ValidationErr::Conversion(e.to_string()))?;
+        let ciphertext = cipher
+            .encrypt(&msg_nonce, msg.0.as_slice())
+            .map_err(|e| ValidationErr::Encryption(e.to_string()))?;
         let mut static_nonce: [u8; 12] = [0; 12];
-        getrandom::getrandom(&mut static_nonce).unwrap();
-        let nonce = GenericArray::from_slice(&static_nonce);
-        let cipher = ChaCha20Poly1305::new_from_slice(shared_secret.as_bytes()).unwrap();
-        let ciphertext = cipher.encrypt(nonce, msg.0.as_slice())?;
+        static_nonce.copy_from_slice(&msg_nonce);
 
         let mut hasher = Blake2s256::new();
         hasher.update(&ciphertext);
@@ -187,18 +193,23 @@ impl SignedMessage {
         })
     }
 
+    // let mut static_nonce: [u8; 12] = [0; 12];
+    // getrandom::getrandom(&mut static_nonce).unwrap();
+    // let nonce = GenericArray::from_slice(&static_nonce);
+
     /// Decrypts the message and returns the plaintext.
-    pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, aead::Error> {
-        if !self.verify() {
-            return Err(aead::Error);
-        }
-        let static_secret = derive_static_secret(sk);
+    pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, ValidationErr> {
+        let mut static_secret = derive_static_secret(sk);
         let shared_secret = static_secret.diffie_hellman(&PublicKey::from(self.a));
-        let cipher = ChaCha20Poly1305::new_from_slice(shared_secret.as_bytes()).unwrap();
-        cipher.decrypt(
-            &generic_array::GenericArray::from(self.nonce),
-            self.msg.0.as_slice(),
-        )
+        static_secret.zeroize();
+        let cipher = ChaCha20Poly1305::new_from_slice(shared_secret.as_bytes())
+            .map_err(|e| ValidationErr::Conversion(e.to_string()))?
+            .decrypt(
+                &generic_array::GenericArray::from(self.nonce),
+                self.msg.0.as_slice(),
+            )
+            .map_err(|e| ValidationErr::Decryption(e.to_string()))?;
+        Ok(cipher)
     }
 
     /// Returns the AccountId32 of the message signer.
@@ -206,7 +217,12 @@ impl SignedMessage {
         AccountId32::new(self.pk)
     }
 
-    /// Returns the public key of the message signer.
+    /// Returns the public DH parameter of the message sender.
+    pub fn sender(&self) -> x25519_dalek::PublicKey {
+        x25519_dalek::PublicKey::from(self.a)
+    }
+
+    /// Returns the sr25519 public key of the message signer.
     pub fn pk(&self) -> sr25519::Public {
         sr25519::Public::from_raw(self.pk)
     }
@@ -242,6 +258,22 @@ pub fn mnemonic_to_pair(m: &Mnemonic) -> sr25519::Pair {
     <sr25519::Pair as Pair>::from_phrase(m.phrase(), None)
         .unwrap()
         .0
+}
+
+#[derive(Debug, Error)]
+pub enum ValidationErr {
+    #[error("ChaCha20 decryption error: {0}")]
+    Decryption(String),
+    #[error("ChaCha20 Encryption error: {0}")]
+    Encryption(String),
+    #[error("ChaCha20 Conversion error: {0}")]
+    Conversion(String),
+    #[error("Secret String failure: {0:?}")]
+    SecretString(&'static str),
+    #[error("Message is too old")]
+    StaleMessage,
+    #[error("Time subtraction error: {0}")]
+    SystemTime(#[from] std::time::SystemTimeError),
 }
 
 #[cfg(test)]
