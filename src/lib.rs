@@ -139,6 +139,7 @@ pub fn derive_static_secret(sk: &sr25519::Pair) -> StaticSecret {
     let hash = hasher.finalize().to_vec();
     buffer.copy_from_slice(&hash);
     let result = StaticSecret::from(buffer);
+    buffer.zeroize();
     result
 }
 
