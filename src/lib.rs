@@ -86,7 +86,7 @@ pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8>) -> Result<String
     }
 
     let sec_key =
-        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
+        SecretKey::from_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
     let pair = sr25519::Pair::from(sec_key);
     let signed_message =
         SignedMessage::new(&pair, &_msg, &_pk).map_err(|err| Error::new(&err.to_string()))?;
