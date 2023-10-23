@@ -45,7 +45,7 @@ pub fn public_key_from_secret(sk: Vec<u8>) -> Result<Vec<u8>, Error> {
         return Err(Error::new("Secret key must be 64 bytes"));
     }
     let sec_key =
-        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
+        SecretKey::from_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
     let pair = sr25519::Pair::from(sec_key);
     let ss = derive_static_secret(&pair);
     Ok(PublicKey::from(&ss).as_bytes().to_vec())
