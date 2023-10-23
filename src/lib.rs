@@ -107,7 +107,7 @@ pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Result<Vec<u8>, Error> {
     }
 
     let sec_key =
-        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
+        SecretKey::from_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
     let pair = sr25519::Pair::from(sec_key);
     Ok(sm
         .decrypt(&pair)
@@ -341,5 +341,34 @@ mod tests {
 
         // Check the encrypted message != the plaintext.
         assert_ne!(encrypted_message.msg, plaintext);
+    }
+
+    /// This checks that a SignedMessage created with SignedMessage::new and one created with
+    /// encrypt_and_sign both have the same public key
+    #[test]
+    fn test_keypair_parsing() {
+        let plaintext_vec = vec![68, 42, 0];
+
+        let alice = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let _alice_secret = derive_static_secret(&alice);
+
+        let bob = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let bob_secret = derive_static_secret(&bob);
+        let bob_public_key = PublicKey::from(&bob_secret);
+
+        // Test encryption & signing.
+        let signed_message =
+            SignedMessage::new(&alice, &Bytes(plaintext_vec.clone()), &bob_public_key).unwrap();
+
+        let signed_message_wasm_json = encrypt_and_sign(
+            alice.to_raw_vec(),
+            plaintext_vec,
+            bob_public_key.to_bytes().to_vec(),
+        )
+        .unwrap();
+
+        let signed_message_wasm: SignedMessage =
+            serde_json::from_str(&signed_message_wasm_json).unwrap();
+        assert_eq!(signed_message_wasm.pk, signed_message.pk);
     }
 }
