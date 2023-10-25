@@ -1,5 +1,5 @@
 
-import {from_hex, to_hex, decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq } from "x25519-chacha20poly1305";
+import {from_hex, to_hex, decrypt_and_verify, gen_signing_key, encrypt_and_sign, public_key_from_secret, constant_time_eq, encryptOnly, decryptOnly } from "x25519-chacha20poly1305";
 
 let empty = new Uint8Array(32);
 let hempty = to_hex(empty);
@@ -28,3 +28,16 @@ console.log(decrypted_plaintext);
 let is_equal = constant_time_eq(decrypted_plaintext, plaintext);
 console.log("alice encrypted plaintext is equal to bob decrypted ciphertext: ", is_equal);
 
+// Test encryptOnly:
+
+// Alice encrypts and signs the message to bob.
+let encrypted_msg = encryptOnly(alice_sk, plaintext, bob_pk);
+console.log(encrypted_msg);
+
+// Bob decrypts the message.
+decrypted_plaintext = decryptOnly(bob_sk, encrypted_msg);
+
+console.log(decrypted_plaintext);
+// Check the original plaintext equals the decrypted plaintext.
+is_equal = constant_time_eq(decrypted_plaintext, plaintext);
+console.log("alice encrypted plaintext is equal to bob decrypted ciphertext: ", is_equal);
