@@ -201,6 +201,17 @@ impl SignedMessage {
         })
     }
 
+    /// Creates a `SignedMessage` without needing any types from sp-core
+    // This is useful for environments using newer versions of sp-core
+    pub fn new_with_keypair_seed(
+        sr25519_keypair_seed: &[u8; 32],
+        msg: Vec<u8>,
+        recip: &PublicKey,
+    ) -> Result<Self, ValidationErr> {
+        let pair = sr25519::Pair::from_seed(sr25519_keypair_seed);
+        Self::new(&pair, &Bytes(msg), recip)
+    }
+
     /// Decrypts the message and returns the plaintext.
     pub fn decrypt(&self, sk: &sr25519::Pair) -> Result<Vec<u8>, ValidationErr> {
         let mut static_secret = derive_static_secret(sk);
@@ -341,5 +352,40 @@ mod tests {
 
         // Check the encrypted message != the plaintext.
         assert_ne!(encrypted_message.msg, plaintext);
+    }
+
+    #[test]
+    fn test_new_with_seed() {
+        let plaintext = vec![69, 42, 0];
+
+        let mnemonic = new_mnemonic();
+        let (_pair, alice_seed) =
+            <sr25519::Pair as Pair>::from_phrase(mnemonic.phrase(), None).unwrap();
+
+        let bob = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let bob_secret = derive_static_secret(&bob);
+        let bob_public_key = PublicKey::from(&bob_secret);
+
+        // Test encryption & signing.
+        let encrypt_result =
+            SignedMessage::new_with_keypair_seed(&alice_seed, plaintext.clone(), &bob_public_key);
+        // Assert no error received in encryption.
+        assert!(encrypt_result.is_ok());
+        let encrypted_message = encrypt_result.unwrap();
+
+        // Test signature validity
+        assert!(encrypted_message.verify());
+
+        // Test decryption
+        let decrypt_result = encrypted_message.decrypt(&bob);
+        // Assert no error received in decryption.
+        assert!(decrypt_result.is_ok());
+        let decrypted_result = decrypt_result.unwrap();
+
+        // Check the decrypted message equals the plaintext.
+        assert_eq!(decrypted_result, plaintext);
+
+        // Check the encrypted message != the plaintext.
+        assert_ne!(encrypted_message.msg, Bytes(plaintext));
     }
 }
