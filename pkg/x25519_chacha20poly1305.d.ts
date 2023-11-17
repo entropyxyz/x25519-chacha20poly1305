@@ -49,3 +49,19 @@ export function decrypt_and_verify(sk: Uint8Array, msg: string): Uint8Array;
 * @returns {boolean}
 */
 export function constant_time_eq(a: Uint8Array, b: Uint8Array): boolean;
+/**
+* Encrypts, signs, and serializes a SignedMessage to JSON.
+* @param {Uint8Array} sk
+* @param {Uint8Array} msg
+* @param {Uint8Array} pk
+* @returns {string}
+*/
+export function encryptOnly(sk: Uint8Array, msg: Uint8Array, pk: Uint8Array): string;
+/**
+* Deserializes and decrypts a json encoded `EncryptedMessage`.
+* Returns the plaintext.
+* @param {Uint8Array} sk
+* @param {string} msg
+* @returns {Uint8Array}
+*/
+export function decryptOnly(sk: Uint8Array, msg: string): Uint8Array;

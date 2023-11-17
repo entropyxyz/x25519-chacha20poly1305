@@ -8,6 +8,8 @@ export function gen_signing_key(a: number): void;
 export function encrypt_and_sign(a: number, b: number, c: number, d: number, e: number, f: number, g: number): void;
 export function decrypt_and_verify(a: number, b: number, c: number, d: number, e: number): void;
 export function constant_time_eq(a: number, b: number, c: number, d: number): number;
+export function encryptOnly(a: number, b: number, c: number, d: number, e: number, f: number, g: number): void;
+export function decryptOnly(a: number, b: number, c: number, d: number, e: number): void;
 export function rustsecp256k1_v0_4_1_context_create(a: number): number;
 export function rustsecp256k1_v0_4_1_context_destroy(a: number): void;
 export function rustsecp256k1_v0_4_1_default_illegal_callback_fn(a: number, b: number): void;

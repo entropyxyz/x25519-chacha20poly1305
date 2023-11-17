@@ -1,9 +1,11 @@
+mod encrypt_only;
 use bip39::Mnemonic;
 use blake2::{Blake2s256, Digest};
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit},
     ChaCha20Poly1305,
 };
+pub use encrypt_only::EncryptedMessage;
 use hex;
 use js_sys::Error;
 use rand_core::OsRng;
