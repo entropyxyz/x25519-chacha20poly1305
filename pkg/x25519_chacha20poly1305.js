@@ -228,21 +228,21 @@ module.exports.gen_signing_key = function() {
 
 /**
 * Encrypts, signs, and serializes a SignedMessage to JSON.
-* @param {Uint8Array} sk
-* @param {Uint8Array} msg
-* @param {Uint8Array} pk
+* @param {Uint8Array} sr25519_secret_key
+* @param {Uint8Array} msg_vec
+* @param {Uint8Array} recipient_public_x25519_key_vec
 * @returns {string}
 */
-module.exports.encrypt_and_sign = function(sk, msg, pk) {
+module.exports.encrypt_and_sign = function(sr25519_secret_key, msg_vec, recipient_public_x25519_key_vec) {
     let deferred5_0;
     let deferred5_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(sk, wasm.__wbindgen_malloc);
+        const ptr0 = passArray8ToWasm0(sr25519_secret_key, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passArray8ToWasm0(msg, wasm.__wbindgen_malloc);
+        const ptr1 = passArray8ToWasm0(msg_vec, wasm.__wbindgen_malloc);
         const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passArray8ToWasm0(pk, wasm.__wbindgen_malloc);
+        const ptr2 = passArray8ToWasm0(recipient_public_x25519_key_vec, wasm.__wbindgen_malloc);
         const len2 = WASM_VECTOR_LEN;
         wasm.encrypt_and_sign(retptr, ptr0, len0, ptr1, len1, ptr2, len2);
         var r0 = getInt32Memory0()[retptr / 4 + 0];

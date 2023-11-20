@@ -41,14 +41,19 @@ pub fn from_hex(v: String) -> Result<Vec<u8>, Error> {
 /// Derives a public DH key from a static DH secret.
 /// sk must be 64 bytes in length or an error will be returned.
 pub fn public_key_from_secret(sk: Vec<u8>) -> Result<Vec<u8>, Error> {
-    if sk.len() != 64 {
-        return Err(Error::new("Secret key must be 64 bytes"));
-    }
-    let sec_key =
-        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
-    let pair = sr25519::Pair::from(sec_key);
+    let pair = sr25519_keypair_from_secret_key(sk)?;
     let ss = derive_static_secret(&pair);
     Ok(PublicKey::from(&ss).as_bytes().to_vec())
+}
+
+fn sr25519_keypair_from_secret_key(secret_key_vec: Vec<u8>) -> Result<sr25519::Pair, Error> {
+    if secret_key_vec.len() != 64 {
+        return Err(Error::new("Secret key must be 64 bytes"));
+    }
+    let secret = SecretKey::from_ed25519_bytes(secret_key_vec.as_slice())
+        .map_err(|err| Error::new(&err.to_string()))?;
+    let public = secret.to_public();
+    Ok(sr25519::Pair::from(schnorrkel::Keypair { secret, public }))
 }
 
 // TODO i don't think this is needed as nonce generation is done internally
@@ -73,23 +78,29 @@ pub fn gen_signing_key() -> Result<Vec<u8>, Error> {
 
 #[wasm_bindgen]
 /// Encrypts, signs, and serializes a SignedMessage to JSON.
-pub fn encrypt_and_sign(sk: Vec<u8>, msg: Vec<u8>, pk: Vec<u8>) -> Result<String, Error> {
-    let mut _raw_pk: [u8; 32] = [0; 32];
-    _raw_pk.copy_from_slice(&pk[0..32]);
-    let _pk = PublicKey::from(_raw_pk);
-    let _msg = Bytes(msg);
+pub fn encrypt_and_sign(
+    sr25519_secret_key: Vec<u8>,
+    msg_vec: Vec<u8>,
+    recipient_public_x25519_key_vec: Vec<u8>,
+) -> Result<String, Error> {
+    let recipient_pk = {
+        if recipient_public_x25519_key_vec.len() != 32 {
+            return Err(Error::new(
+                "Recipient public encryption key must be 32 bytes",
+            ));
+        }
+        let mut raw_pk: [u8; 32] = [0; 32];
+        raw_pk.copy_from_slice(&recipient_public_x25519_key_vec[0..32]);
+        PublicKey::from(raw_pk)
+    };
 
-    let mut sk_buff: [u8; 64] = [0; 64];
-    sk_buff.copy_from_slice(&sk[0..64]);
-    if sk.len() != 64 {
-        return Err(Error::new("Secret key must be 64 bytes"));
-    }
+    let msg = Bytes(msg_vec);
 
-    let sec_key =
-        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
-    let pair = sr25519::Pair::from(sec_key);
-    let signed_message =
-        SignedMessage::new(&pair, &_msg, &_pk).map_err(|err| Error::new(&err.to_string()))?;
+    let pair = sr25519_keypair_from_secret_key(sr25519_secret_key)?;
+
+    let signed_message = SignedMessage::new(&pair, &msg, &recipient_pk)
+        .map_err(|err| Error::new(&err.to_string()))?;
+
     Ok(signed_message
         .to_json()
         .map_err(|err| Error::new(&err.to_string()))?)
@@ -106,9 +117,8 @@ pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Result<Vec<u8>, Error> {
         return Err(Error::new("Failed to verify signature"));
     }
 
-    let sec_key =
-        SecretKey::from_ed25519_bytes(sk.as_slice()).map_err(|err| Error::new(&err.to_string()))?;
-    let pair = sr25519::Pair::from(sec_key);
+    let pair = sr25519_keypair_from_secret_key(sk)?;
+
     Ok(sm
         .decrypt(&pair)
         .map_err(|err| Error::new(&err.to_string()))?)
@@ -257,13 +267,6 @@ pub fn new_mnemonic() -> Mnemonic {
     Mnemonic::new(bip39::MnemonicType::Words24, bip39::Language::English)
 }
 
-/// Derives a sr25519::Pair from a Mnemonic
-pub fn mnemonic_to_pair(m: &Mnemonic) -> Result<sr25519::Pair, ValidationErr> {
-    Ok(<sr25519::Pair as Pair>::from_phrase(m.phrase(), None)
-        .map_err(|_| ValidationErr::SecretString("Secret String Error"))?
-        .0)
-}
-
 #[derive(Debug, Error)]
 pub enum ValidationErr {
     #[error("ChaCha20 decryption error: {0}")]
@@ -290,11 +293,18 @@ mod tests {
     fn test_bad_signatures_fails() {
         let plaintext = Bytes(vec![69, 42, 0]);
 
-        let alice = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let alice_seed =
+            hex::decode("e5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a")
+                .unwrap();
+        let alice = sr25519::Pair::from_seed_slice(&alice_seed).unwrap();
+
         let alice_secret = derive_static_secret(&alice);
         let alice_public_key = PublicKey::from(&alice_secret);
 
-        let bob = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let bob_seed =
+            hex::decode("398f0c28f98885e046333d4a41c19cee4c37368a9832c6502f6cfd182e2aef89")
+                .unwrap();
+        let bob = sr25519::Pair::from_seed_slice(&bob_seed).unwrap();
         let bob_secret = derive_static_secret(&bob);
         let bob_public_key = PublicKey::from(&bob_secret);
 
@@ -314,10 +324,17 @@ mod tests {
     fn test_sign_and_encrypt() {
         let plaintext = Bytes(vec![69, 42, 0]);
 
-        let alice = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let alice_seed =
+            hex::decode("e5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a")
+                .unwrap();
+        let alice = sr25519::Pair::from_seed_slice(&alice_seed).unwrap();
+
         let _alice_secret = derive_static_secret(&alice);
 
-        let bob = mnemonic_to_pair(&new_mnemonic()).unwrap();
+        let bob_seed =
+            hex::decode("398f0c28f98885e046333d4a41c19cee4c37368a9832c6502f6cfd182e2aef89")
+                .unwrap();
+        let bob = sr25519::Pair::from_seed_slice(&bob_seed).unwrap();
         let bob_secret = derive_static_secret(&bob);
         let bob_public_key = PublicKey::from(&bob_secret);
 
