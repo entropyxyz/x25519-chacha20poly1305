@@ -207,10 +207,10 @@ impl SignedMessage {
     pub fn new_with_keypair_seed(
         sr25519_keypair_seed: &[u8; 32],
         msg: Vec<u8>,
-        recip: &PublicKey,
+        recipient: &PublicKey,
     ) -> Result<Self, ValidationErr> {
         let pair = sr25519::Pair::from_seed(sr25519_keypair_seed);
-        Self::new(&pair, &Bytes(msg), recip)
+        Self::new(&pair, &Bytes(msg), recipient)
     }
 
     /// Decrypts the message and returns the plaintext.
