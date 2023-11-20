@@ -202,7 +202,8 @@ impl SignedMessage {
     }
 
     /// Creates a `SignedMessage` without needing any types from sp-core
-    // This is useful for environments using newer versions of sp-core
+    ///
+    /// This is useful for environments using newer versions of sp-core
     pub fn new_with_keypair_seed(
         sr25519_keypair_seed: &[u8; 32],
         msg: Vec<u8>,
