@@ -14,11 +14,11 @@ export function to_hex(v: Uint8Array): string;
 export function from_hex(v: string): Uint8Array;
 /**
 * Derives a public DH key from a static DH secret.
-* sk must be 64 bytes in length or an error will be returned.
-* @param {Uint8Array} sk
+* secret_key must be 64 bytes in length or an error will be returned.
+* @param {Uint8Array} secret_key
 * @returns {Uint8Array}
 */
-export function public_key_from_secret(sk: Uint8Array): Uint8Array;
+export function public_key_from_secret(secret_key: Uint8Array): Uint8Array;
 /**
 * Generates a Ristretto Schnorr secret key.
 * This method is used for testing, applications that implement this
@@ -29,19 +29,19 @@ export function gen_signing_key(): Uint8Array;
 /**
 * Encrypts, signs, and serializes a SignedMessage to JSON.
 * @param {Uint8Array} sr25519_secret_key
-* @param {Uint8Array} msg_vec
+* @param {Uint8Array} message
 * @param {Uint8Array} recipient_public_x25519_key_vec
 * @returns {string}
 */
-export function encrypt_and_sign(sr25519_secret_key: Uint8Array, msg_vec: Uint8Array, recipient_public_x25519_key_vec: Uint8Array): string;
+export function encrypt_and_sign(sr25519_secret_key: Uint8Array, message: Uint8Array, recipient_public_x25519_key_vec: Uint8Array): string;
 /**
 * Deserializes, verifies and decrypts a json encoded `SignedMessage`.
 * Returns the plaintext.
-* @param {Uint8Array} sk
-* @param {string} msg
+* @param {Uint8Array} secret_key
+* @param {string} message
 * @returns {Uint8Array}
 */
-export function decrypt_and_verify(sk: Uint8Array, msg: string): Uint8Array;
+export function decrypt_and_verify(secret_key: Uint8Array, message: string): Uint8Array;
 /**
 * Checks the equality of two equal sized byte vectors in constant time.
 * @param {Uint8Array} a

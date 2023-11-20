@@ -39,18 +39,18 @@ pub fn from_hex(v: String) -> Result<Vec<u8>, Error> {
 
 #[wasm_bindgen]
 /// Derives a public DH key from a static DH secret.
-/// sk must be 64 bytes in length or an error will be returned.
-pub fn public_key_from_secret(sk: Vec<u8>) -> Result<Vec<u8>, Error> {
-    let pair = sr25519_keypair_from_secret_key(sk)?;
-    let ss = derive_static_secret(&pair);
-    Ok(PublicKey::from(&ss).as_bytes().to_vec())
+/// secret_key must be 64 bytes in length or an error will be returned.
+pub fn public_key_from_secret(secret_key: Vec<u8>) -> Result<Vec<u8>, Error> {
+    let pair = sr25519_keypair_from_secret_key(secret_key)?;
+    let x25519_secret = derive_static_secret(&pair);
+    Ok(PublicKey::from(&x25519_secret).as_bytes().to_vec())
 }
 
-fn sr25519_keypair_from_secret_key(secret_key_vec: Vec<u8>) -> Result<sr25519::Pair, Error> {
-    if secret_key_vec.len() != 64 {
+fn sr25519_keypair_from_secret_key(secret_key: Vec<u8>) -> Result<sr25519::Pair, Error> {
+    if secret_key.len() != 64 {
         return Err(Error::new("Secret key must be 64 bytes"));
     }
-    let secret = SecretKey::from_ed25519_bytes(secret_key_vec.as_slice())
+    let secret = SecretKey::from_ed25519_bytes(secret_key.as_slice())
         .map_err(|err| Error::new(&err.to_string()))?;
     let public = secret.to_public();
     Ok(sr25519::Pair::from(schnorrkel::Keypair { secret, public }))
@@ -80,7 +80,7 @@ pub fn gen_signing_key() -> Result<Vec<u8>, Error> {
 /// Encrypts, signs, and serializes a SignedMessage to JSON.
 pub fn encrypt_and_sign(
     sr25519_secret_key: Vec<u8>,
-    msg_vec: Vec<u8>,
+    message: Vec<u8>,
     recipient_public_x25519_key_vec: Vec<u8>,
 ) -> Result<String, Error> {
     let recipient_pk = {
@@ -94,11 +94,11 @@ pub fn encrypt_and_sign(
         PublicKey::from(raw_pk)
     };
 
-    let msg = Bytes(msg_vec);
+    let message_bytes = Bytes(message);
 
     let pair = sr25519_keypair_from_secret_key(sr25519_secret_key)?;
 
-    let signed_message = SignedMessage::new(&pair, &msg, &recipient_pk)
+    let signed_message = SignedMessage::new(&pair, &message_bytes, &recipient_pk)
         .map_err(|err| Error::new(&err.to_string()))?;
 
     Ok(signed_message
@@ -109,17 +109,17 @@ pub fn encrypt_and_sign(
 #[wasm_bindgen]
 /// Deserializes, verifies and decrypts a json encoded `SignedMessage`.
 /// Returns the plaintext.
-pub fn decrypt_and_verify(sk: Vec<u8>, msg: String) -> Result<Vec<u8>, Error> {
-    let sm: SignedMessage =
-        serde_json::from_str(msg.as_str()).map_err(|err| Error::new(&err.to_string()))?;
+pub fn decrypt_and_verify(secret_key: Vec<u8>, message: String) -> Result<Vec<u8>, Error> {
+    let signed_message: SignedMessage =
+        serde_json::from_str(message.as_str()).map_err(|err| Error::new(&err.to_string()))?;
 
-    if !sm.verify() {
+    if !signed_message.verify() {
         return Err(Error::new("Failed to verify signature"));
     }
 
-    let pair = sr25519_keypair_from_secret_key(sk)?;
+    let pair = sr25519_keypair_from_secret_key(secret_key)?;
 
-    Ok(sm
+    Ok(signed_message
         .decrypt(&pair)
         .map_err(|err| Error::new(&err.to_string()))?)
 }
@@ -288,23 +288,17 @@ pub enum ValidationErr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sp_keyring::sr25519::Keyring;
 
     #[test]
     fn test_bad_signatures_fails() {
         let plaintext = Bytes(vec![69, 42, 0]);
 
-        let alice_seed =
-            hex::decode("e5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a")
-                .unwrap();
-        let alice = sr25519::Pair::from_seed_slice(&alice_seed).unwrap();
-
+        let alice = Keyring::Alice.pair();
         let alice_secret = derive_static_secret(&alice);
         let alice_public_key = PublicKey::from(&alice_secret);
 
-        let bob_seed =
-            hex::decode("398f0c28f98885e046333d4a41c19cee4c37368a9832c6502f6cfd182e2aef89")
-                .unwrap();
-        let bob = sr25519::Pair::from_seed_slice(&bob_seed).unwrap();
+        let bob = Keyring::Bob.pair();
         let bob_secret = derive_static_secret(&bob);
         let bob_public_key = PublicKey::from(&bob_secret);
 
@@ -324,17 +318,9 @@ mod tests {
     fn test_sign_and_encrypt() {
         let plaintext = Bytes(vec![69, 42, 0]);
 
-        let alice_seed =
-            hex::decode("e5be9a5092b81bca64be81d212e7f2f9eba183bb7a90954f7b76361f6edb5c0a")
-                .unwrap();
-        let alice = sr25519::Pair::from_seed_slice(&alice_seed).unwrap();
+        let alice = Keyring::Alice.pair();
 
-        let _alice_secret = derive_static_secret(&alice);
-
-        let bob_seed =
-            hex::decode("398f0c28f98885e046333d4a41c19cee4c37368a9832c6502f6cfd182e2aef89")
-                .unwrap();
-        let bob = sr25519::Pair::from_seed_slice(&bob_seed).unwrap();
+        let bob = Keyring::Bob.pair();
         let bob_secret = derive_static_secret(&bob);
         let bob_public_key = PublicKey::from(&bob_secret);
 
