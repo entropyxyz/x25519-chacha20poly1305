@@ -81,16 +81,16 @@ pub fn gen_signing_key() -> Result<Vec<u8>, Error> {
 pub fn encrypt_and_sign(
     sr25519_secret_key: Vec<u8>,
     message: Vec<u8>,
-    recipient_public_x25519_key_vec: Vec<u8>,
+    recipient_public_x25519_key: Vec<u8>,
 ) -> Result<String, Error> {
     let recipient_pk = {
-        if recipient_public_x25519_key_vec.len() != 32 {
+        if recipient_public_x25519_key.len() != 32 {
             return Err(Error::new(
                 "Recipient public encryption key must be 32 bytes",
             ));
         }
         let mut raw_pk: [u8; 32] = [0; 32];
-        raw_pk.copy_from_slice(&recipient_public_x25519_key_vec[0..32]);
+        raw_pk.copy_from_slice(&recipient_public_x25519_key[0..32]);
         PublicKey::from(raw_pk)
     };
 
