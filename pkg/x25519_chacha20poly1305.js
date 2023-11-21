@@ -176,14 +176,14 @@ module.exports.from_hex = function(v) {
 
 /**
 * Derives a public DH key from a static DH secret.
-* sk must be 64 bytes in length or an error will be returned.
-* @param {Uint8Array} sk
+* secret_key must be 64 bytes in length or an error will be returned.
+* @param {Uint8Array} secret_key
 * @returns {Uint8Array}
 */
-module.exports.public_key_from_secret = function(sk) {
+module.exports.public_key_from_secret = function(secret_key) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(sk, wasm.__wbindgen_malloc);
+        const ptr0 = passArray8ToWasm0(secret_key, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
         wasm.public_key_from_secret(retptr, ptr0, len0);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
@@ -228,21 +228,21 @@ module.exports.gen_signing_key = function() {
 
 /**
 * Encrypts, signs, and serializes a SignedMessage to JSON.
-* @param {Uint8Array} sk
-* @param {Uint8Array} msg
-* @param {Uint8Array} pk
+* @param {Uint8Array} sr25519_secret_key
+* @param {Uint8Array} message
+* @param {Uint8Array} recipient_public_x25519_key_vec
 * @returns {string}
 */
-module.exports.encrypt_and_sign = function(sk, msg, pk) {
+module.exports.encrypt_and_sign = function(sr25519_secret_key, message, recipient_public_x25519_key_vec) {
     let deferred5_0;
     let deferred5_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(sk, wasm.__wbindgen_malloc);
+        const ptr0 = passArray8ToWasm0(sr25519_secret_key, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passArray8ToWasm0(msg, wasm.__wbindgen_malloc);
+        const ptr1 = passArray8ToWasm0(message, wasm.__wbindgen_malloc);
         const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passArray8ToWasm0(pk, wasm.__wbindgen_malloc);
+        const ptr2 = passArray8ToWasm0(recipient_public_x25519_key_vec, wasm.__wbindgen_malloc);
         const len2 = WASM_VECTOR_LEN;
         wasm.encrypt_and_sign(retptr, ptr0, len0, ptr1, len1, ptr2, len2);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
@@ -267,16 +267,16 @@ module.exports.encrypt_and_sign = function(sk, msg, pk) {
 /**
 * Deserializes, verifies and decrypts a json encoded `SignedMessage`.
 * Returns the plaintext.
-* @param {Uint8Array} sk
-* @param {string} msg
+* @param {Uint8Array} secret_key
+* @param {string} message
 * @returns {Uint8Array}
 */
-module.exports.decrypt_and_verify = function(sk, msg) {
+module.exports.decrypt_and_verify = function(secret_key, message) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passArray8ToWasm0(sk, wasm.__wbindgen_malloc);
+        const ptr0 = passArray8ToWasm0(secret_key, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(msg, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr1 = passStringToWasm0(message, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len1 = WASM_VECTOR_LEN;
         wasm.decrypt_and_verify(retptr, ptr0, len0, ptr1, len1);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
