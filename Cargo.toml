@@ -35,6 +35,7 @@ zeroize = "1.5.7"
 sp-keyring = "24.0.0"
 
 [features]
+# Extra functionality only intended for use in development
 unsafe = []
 
 [lib]
