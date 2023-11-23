@@ -30,10 +30,10 @@ export function gen_signing_key(): Uint8Array;
 * Encrypts, signs, and serializes a SignedMessage to JSON.
 * @param {Uint8Array} sr25519_secret_key
 * @param {Uint8Array} message
-* @param {Uint8Array} recipient_public_x25519_key_vec
+* @param {Uint8Array} recipient_public_x25519_key
 * @returns {string}
 */
-export function encrypt_and_sign(sr25519_secret_key: Uint8Array, message: Uint8Array, recipient_public_x25519_key_vec: Uint8Array): string;
+export function encrypt_and_sign(sr25519_secret_key: Uint8Array, message: Uint8Array, recipient_public_x25519_key: Uint8Array): string;
 /**
 * Deserializes, verifies and decrypts a json encoded `SignedMessage`.
 * Returns the plaintext.

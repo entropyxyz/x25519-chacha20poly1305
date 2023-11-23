@@ -230,10 +230,10 @@ module.exports.gen_signing_key = function() {
 * Encrypts, signs, and serializes a SignedMessage to JSON.
 * @param {Uint8Array} sr25519_secret_key
 * @param {Uint8Array} message
-* @param {Uint8Array} recipient_public_x25519_key_vec
+* @param {Uint8Array} recipient_public_x25519_key
 * @returns {string}
 */
-module.exports.encrypt_and_sign = function(sr25519_secret_key, message, recipient_public_x25519_key_vec) {
+module.exports.encrypt_and_sign = function(sr25519_secret_key, message, recipient_public_x25519_key) {
     let deferred5_0;
     let deferred5_1;
     try {
@@ -242,7 +242,7 @@ module.exports.encrypt_and_sign = function(sr25519_secret_key, message, recipien
         const len0 = WASM_VECTOR_LEN;
         const ptr1 = passArray8ToWasm0(message, wasm.__wbindgen_malloc);
         const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passArray8ToWasm0(recipient_public_x25519_key_vec, wasm.__wbindgen_malloc);
+        const ptr2 = passArray8ToWasm0(recipient_public_x25519_key, wasm.__wbindgen_malloc);
         const len2 = WASM_VECTOR_LEN;
         wasm.encrypt_and_sign(retptr, ptr0, len0, ptr1, len1, ptr2, len2);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
