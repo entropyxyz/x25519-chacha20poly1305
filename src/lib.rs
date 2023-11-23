@@ -297,8 +297,6 @@ pub enum SignedMessageErr {
     Encryption(String),
     #[error("ChaCha20 Conversion error: {0}")]
     Conversion(String),
-    #[error("Secret String failure: {0:?}")]
-    SecretString(&'static str),
     #[error("JSON serialization error: {0}")]
     Json(#[from] serde_json::Error),
 }
