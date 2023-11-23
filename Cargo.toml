@@ -31,8 +31,11 @@ js-sys = "0.3.64"
 thiserror = "1.0.47"
 zeroize = "1.5.7"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dev-dependencies]
 sp-keyring = "24.0.0"
+
+[features]
+unsafe = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
