@@ -55,14 +55,6 @@ fn sr25519_keypair_from_secret_key(secret_key: Vec<u8>) -> Result<sr25519::Pair,
     Ok(sr25519::Pair::from(schnorrkel::Keypair { secret, public }))
 }
 
-// TODO i don't think this is needed as nonce generation is done internally
-/// Generate a 12 byte random nonce
-pub fn gen_msg_nonce() -> Result<Vec<u8>, Error> {
-    let mut vec: Vec<u8> = vec![0; 12];
-    getrandom::getrandom(&mut vec).map_err(|err| Error::new(&err.to_string()))?;
-    return Ok(vec);
-}
-
 #[wasm_bindgen]
 /// Generates a Ristretto Schnorr secret key.
 /// This method is used for testing, applications that implement this
