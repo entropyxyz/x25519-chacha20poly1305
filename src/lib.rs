@@ -1,4 +1,3 @@
-use bip39::Mnemonic;
 use blake2::{Blake2s256, Digest};
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit},
@@ -282,11 +281,6 @@ impl SignedMessage {
     pub fn to_json(&self) -> Result<String, SignedMessageErr> {
         Ok(to_string(self)?)
     }
-}
-
-/// Creates a new random Mnemonic.
-pub fn new_mnemonic() -> Mnemonic {
-    Mnemonic::new(bip39::MnemonicType::Words24, bip39::Language::English)
 }
 
 #[derive(Debug, Error)]
