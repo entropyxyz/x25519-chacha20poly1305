@@ -1,11 +1,11 @@
 {
   "name": "x25519-chacha20poly1305",
   "collaborators": [
-    "John Sahhar <john@entropy.xyz>"
+    "Entropy Cryptography <engineering@entropy.xyz>"
   ],
   "description": "x25519 & chacha20poly1305",
   "version": "0.2.1",
-  "license": "MIT OR Apache-2.0",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "https://github.com/entropyxyz/x25519-chacha20poly1305"
